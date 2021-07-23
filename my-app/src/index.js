@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import ReactDOM from 'react-dom';
 import './index.css'
 
@@ -39,105 +39,114 @@ function Board(props) {
   
 }
   
-class Game extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      history: [{
-        squares: Array(9).fill(null),
-        lastChoice: null,
-      }],
-      stepNumber: 0,
-      xIsNext: true,
-      listDescending: true,
-    };
-  }
+function Game(props) {
+  const [fullHistory, setHistory] = useState([{
+    squares: Array(9).fill(null),
+    lastChoice: null,
+  }])
+  const [stepNumber, setStepNumber] = useState(0)
+  const [xIsNext, setXIsNext] = useState(true)
+  const [listDescending, setListDescending] = useState(true)
 
-  handleClick(i) {
-    const history = this.state.history.slice(0, this.state.stepNumber + 1);
+  function handleClick(i) {
+    let history = fullHistory.slice(0, stepNumber + 1);
     const current = history[history.length - 1];
     const squares = current.squares.slice();
+
     if (calculateGameState(current.squares).winner || squares[i]) {
       return;
     }
-    squares[i] = this.state.xIsNext ? 'X' : 'O';
-    this.setState({
-      history: history.concat([{
-        squares: squares,
-        lastChoice: convertToCoord(i),
-      }]),
-      stepNumber: history.length,
-      xIsNext: !this.state.xIsNext,
-    });
-  }
 
-  jumpTo(step) {
-    this.setState({
-      stepNumber: step,
-      xIsNext: (step % 2) === 0,
-    });
-  }
-
-  reverseList() {
-    this.setState({
-      listDescending: !this.state.listDescending
-    })
-  }
-
-  render() {
-    const history = this.state.history;
-    const current = history[this.state.stepNumber];
-    const gameStateInfo = calculateGameState(current.squares);
-    const winner = gameStateInfo.winner;
-    const isDraw = gameStateInfo.isDraw;
+    squares[i] = xIsNext ? 'X' : 'O';
+    console.log(fullHistory)
     
-    const moves = history.map((step, move) => {
-      const desc = move ?
-        'Go to move #' + move :
-        'Go to game start';
-        const isBold = this.state.stepNumber === move
-      return ( isBold ?
-        <li key={move}>
-          <button className={'boldOption'} onClick={() => this.jumpTo(move)}>
-            {desc} {step.lastChoice}
-          </button>
-        </li>
-        :
-        <li key={move}>
-          <button onClick={() => this.jumpTo(move)}>
-            {desc} {step.lastChoice}
-          </button>
-        </li>
-      )
-    });
+    history.push({
+      squares: squares,
+      lastChoice: convertToCoord(i),
+    })
 
-    let status;
-    if (winner) {
-      status = 'Winner: ' + winner;
-    } else if (isDraw) {
-      status = "Game ended in a draw"
-    } else {
-      status = 'Next player: ' + (this.state.xIsNext ? 'X' : 'O');
-    }
+    setHistory(
+      history
+    )
 
-    return (
-      <div className="game">
-        <div className="game-board">
-          <Board 
-            squares={current.squares}
-            onClick={(i) => this.handleClick(i)}
-          />
-        </div>
-        <div className="game-info">
-          <div>{status}</div>
-          <ol>{this.state.listDescending ? moves : moves.reverse()}</ol>
-          <button onClick={() => this.reverseList()}>
-            Sort by {this.state.listDescending ? "most recent" : "turn order"}
-          </button>
-        </div>
-      </div>
-    );
+    setStepNumber(
+      fullHistory.length - 1
+    )
+
+    setXIsNext(
+      !xIsNext
+    )
   }
+
+  function jumpTo(step) {
+    setStepNumber(
+      step
+    )
+    setXIsNext(
+      (step % 2) === 0
+    )
+  }
+
+  function reverseList() {
+    setListDescending(
+      !listDescending
+    )
+  }
+  
+  console.log(fullHistory)
+  console.log(stepNumber)
+  console.log(fullHistory[stepNumber])
+  const gameStateInfo = calculateGameState(fullHistory[stepNumber].squares);
+  const winner = gameStateInfo.winner;
+  const isDraw = gameStateInfo.isDraw;
+    
+  const moves = fullHistory.map((step, move) => {
+    const desc = move ?
+      'Go to move #' + move :
+      'Go to game start';
+      const isBold = stepNumber === move
+    return ( isBold ?
+      <li key={move}>
+        <button className={'boldOption'} onClick={() => jumpTo(move)}>
+          {desc} {step.lastChoice}
+        </button>
+      </li>
+      :
+      <li key={move}>
+        <button onClick={() => jumpTo(move)}>
+          {desc} {step.lastChoice}
+        </button>
+      </li>
+    )
+  });
+
+  let status;
+  if (winner) {
+    status = 'Winner: ' + winner;
+  } else if (isDraw) {
+    status = "Game ended in a draw"
+  } else {
+    status = 'Next player: ' + (xIsNext ? 'X' : 'O');
+  }
+
+  return (
+    <div className="game">
+      <div className="game-board">
+        <Board 
+          squares={fullHistory[stepNumber].squares}
+          onClick={(i) => handleClick(i)}
+        />
+      </div>
+      <div className="game-info">
+        <div>{status}</div>
+        <ol>{listDescending ? moves : moves.reverse()}</ol>
+        <button onClick={() => reverseList()}>
+          Sort by {listDescending ? "most recent" : "turn order"}
+        </button>
+      </div>
+    </div>
+  );
+  
 }
 
 function calculateGameState(squares) {
